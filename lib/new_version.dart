@@ -157,49 +157,16 @@ class NewVersion {
       debugPrint('Can\'t find an app in the Play Store with the id: $id');
       return null;
     }
-    final document = parse(response.body);
 
-    String storeVersion = '0.0.0';
+    String? storeVersion = '0.0.0';
+    storeVersion =
+        RegExp(r',\[\[\["([0-9,\.]*)"]],').firstMatch(response.body)!.group(1);
     String? releaseNotes;
-
-    final additionalInfoElements = document.getElementsByClassName('hAyfc');
-    if (additionalInfoElements.isNotEmpty) {
-      final versionElement = additionalInfoElements.firstWhere(
-        (elm) => elm.querySelector('.BgcNfc')!.text == 'Current Version',
-      );
-      storeVersion = versionElement.querySelector('.htlgb')!.text;
-
-      final sectionElements = document.getElementsByClassName('W4P4ne');
-      final releaseNotesElement = sectionElements.firstWhereOrNull(
-        (elm) => elm.querySelector('.wSaTQd')!.text == 'What\'s New',
-      );
-      releaseNotes = releaseNotesElement
-          ?.querySelector('.PHBdkd')
-          ?.querySelector('.DWPxHb')
-          ?.text;
-    } else {
-      final scriptElements = document.getElementsByTagName('script');
-      final infoScriptElement = scriptElements.firstWhere(
-        (elm) => elm.text.contains('key: \'ds:4\''),
-      );
-
-      final param = infoScriptElement.text
-          .substring(20, infoScriptElement.text.length - 2)
-          .replaceAll('key:', '"key":')
-          .replaceAll('hash:', '"hash":')
-          .replaceAll('data:', '"data":')
-          .replaceAll('sideChannel:', '"sideChannel":')
-          .replaceAll('\'', '"');
-      final parsed = json.decode(param);
-      final data = parsed['data'];
-
-      storeVersion = data[1][2][140][0][0][0];
-      releaseNotes = data[1][2][144][1][1];
-    }
 
     return VersionStatus._(
       localVersion: _getCleanVersion(packageInfo.version),
-      storeVersion: _getCleanVersion(forceAppVersion ?? storeVersion),
+      storeVersion:
+          _getCleanVersion(forceAppVersion ?? storeVersion ?? '0.0.0'),
       appStoreLink: uri.toString(),
       releaseNotes: releaseNotes,
     );
